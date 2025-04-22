@@ -207,13 +207,13 @@ if __name__ == "__main__":
                         help="Путь к тестовому датасету")
     parser.add_argument('--model_path', type=str, default="best_model.pth",
                         help="Путь для сохранения лучшей модели")
-    parser.add_argument('--batch_size', type=int, default=64,
+    parser.add_argument('--batch_size', type=int, default=32,
                         help="Размер батча")
     parser.add_argument('--epochs', type=int, default=100,
                         help="Количество эпох обучения")
     parser.add_argument('--lr', type=float, default=0.001,
                         help="Learning rate")
-    parser.add_argument('--weight_decay', type=float, default=1e-4,
+    parser.add_argument('--weight_decay', type=float, default=0.001,
                         help="Weight decay для оптимизатора")
 
     # 2. Параметры модели
@@ -237,13 +237,13 @@ if __name__ == "__main__":
     # 4. Параметры аугментаций
     parser.add_argument('--use_mixup', action='store_true', default=True,
                         help="Использовать MixUp аугментацию")
-    parser.add_argument('--mixup_prob', type=float, default=0.5,
+    parser.add_argument('--mixup_prob', type=float, default=0.3,
                         help="Вероятность применения MixUp")
     parser.add_argument('--mixup_alpha', type=float, default=1.0,
                         help="Alpha параметр для MixUp")
     parser.add_argument('--use_cutmix', action='store_true', default=True,
                         help="Использовать CutMix аугментацию")
-    parser.add_argument('--cutmix_prob', type=float, default=0.5,
+    parser.add_argument('--cutmix_prob', type=float, default=0.3,
                         help="Вероятность применения CutMix")
     parser.add_argument('--cutmix_alpha', type=float, default=1.0,
                         help="Alpha параметр для CutMix")
@@ -251,7 +251,7 @@ if __name__ == "__main__":
     # 5. Параметры функции потерь
     parser.add_argument('--loss', type=str, choices=['ce', 'focal'], default='focal',
                         help="Тип функции потерь")
-    parser.add_argument('--focal_gamma', type=float, default=2.0,
+    parser.add_argument('--focal_gamma', type=float, default=1.5,
                         help="Gamma параметр для Focal Loss")
 
     # 6. Параметры обучения
@@ -261,9 +261,9 @@ if __name__ == "__main__":
                         help="Momentum для SGD")
     parser.add_argument('--scheduler', type=str, choices=['plateau', 'step', 'cosine'], default='plateau',
                         help="Тип шедулера для LR")
-    parser.add_argument('--patience', type=int, default=5,
+    parser.add_argument('--patience', type=int, default=10,
                         help="Patience для EarlyStopping и ReduceLROnPlateau")
-    parser.add_argument('--min_lr', type=float, default=1e-6,
+    parser.add_argument('--min_lr', type=float, default=0.0000000001,
                         help="Минимальный learning rate")
 
     # 7. Параметры логирования
