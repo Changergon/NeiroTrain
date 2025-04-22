@@ -83,6 +83,9 @@ def main(args):
         print(f"    📁 Директория ошибок: {args.misclassified_dir}")
         print(f"    #️⃣ Кол-во примеров:  {args.num_misclassified}")
 
+
+
+
     # Проверка и загрузка данных
     remove_empty_folders(args.train_dir)
     remove_empty_folders(args.val_dir)
@@ -100,6 +103,16 @@ def main(args):
     val_loader = DataLoader(val_dataset, batch_size=args.batch_size)
     check_loader = DataLoader(check_dataset, batch_size=args.batch_size)
 
+    if args.balance_classes:
+        # Увеличиваем вес редких классов
+        class_weights = 1.0 / (class_counts + 1e-6)  # +1e6 чтобы избежать деления на 0
+        sample_weights = np.array([class_weights[y] for y in train_dataset.targets])
+        sampler = WeightedRandomSampler(sample_weights, len(sample_weights))
+        train_loader = DataLoader(train_dataset, batch_size=args.batch_size, sampler=sampler)
+    else:
+        train_loader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True)
+
+
     model = ImprovedCNN(
         num_classes=num_classes,
         use_cbam=args.use_cbam,
@@ -112,10 +125,13 @@ def main(args):
     ).to(device)
 
 
+
     # --- Выбор функции потерь ---
     class_weights_tensor = torch.tensor(class_weights, dtype=torch.float32).to(device)
     if args.loss == 'focal':
-        criterion = FocalLoss(alpha=class_weights_tensor)
+        # Усиливаем фокус на малых классах
+        gamma = 2.0  # Увеличиваем с 1.5 до 2.0
+        criterion = FocalLoss(alpha=class_weights_tensor, gamma=gamma)
     else:
         criterion = nn.CrossEntropyLoss(weight=class_weights_tensor)
 
@@ -251,7 +267,7 @@ if __name__ == "__main__":
     # 5. Параметры функции потерь
     parser.add_argument('--loss', type=str, choices=['ce', 'focal'], default='focal',
                         help="Тип функции потерь")
-    parser.add_argument('--focal_gamma', type=float, default=1.5,
+    parser.add_argument('--focal_gamma', type=float, default=2.0,
                         help="Gamma параметр для Focal Loss")
 
     # 6. Параметры обучения
@@ -265,6 +281,10 @@ if __name__ == "__main__":
                         help="Patience для EarlyStopping и ReduceLROnPlateau")
     parser.add_argument('--min_lr', type=float, default=0.0000000001,
                         help="Минимальный learning rate")
+    # В разделе "Параметры обучения" добавьте:
+    parser.add_argument('--balance_classes', action='store_true', default=True,
+                        help="Балансировка классов через WeightedRandomSampler")
+
 
     # 7. Параметры логирования
     parser.add_argument('--log_dir', type=str, default="runs",
