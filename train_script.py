@@ -136,8 +136,19 @@ def main(args):
         criterion = nn.CrossEntropyLoss(weight=class_weights_tensor)
 
     optimizer = Adam(model.parameters(), lr=args.lr)
-    scheduler = ReduceLROnPlateau(optimizer, mode='max', factor=0.5, patience=2)
-    early_stopping = EarlyStopping(patience=5)
+    # В функции main():
+    early_stopping = EarlyStopping(
+        patience=args.patience,
+        min_delta=0.001
+    )
+
+    scheduler = ReduceLROnPlateau(
+        optimizer,
+        mode='max',
+        factor=0.5,
+        patience=max(2, args.patience // 3),  # Не менее 2 эпох
+        min_lr=args.min_lr
+    )
 
     best_accuracy = 0.0
     losses, accuracies = [], []
@@ -223,9 +234,9 @@ if __name__ == "__main__":
                         help="Путь к тестовому датасету")
     parser.add_argument('--model_path', type=str, default="best_model.pth",
                         help="Путь для сохранения лучшей модели")
-    parser.add_argument('--batch_size', type=int, default=32,
+    parser.add_argument('--batch_size', type=int, default=64,
                         help="Размер батча")
-    parser.add_argument('--epochs', type=int, default=100,
+    parser.add_argument('--epochs', type=int, default=200,
                         help="Количество эпох обучения")
     parser.add_argument('--lr', type=float, default=0.001,
                         help="Learning rate")
@@ -277,7 +288,7 @@ if __name__ == "__main__":
                         help="Momentum для SGD")
     parser.add_argument('--scheduler', type=str, choices=['plateau', 'step', 'cosine'], default='plateau',
                         help="Тип шедулера для LR")
-    parser.add_argument('--patience', type=int, default=10,
+    parser.add_argument('--patience', type=int, default=15,
                         help="Patience для EarlyStopping и ReduceLROnPlateau")
     parser.add_argument('--min_lr', type=float, default=0.0000000001,
                         help="Минимальный learning rate")
