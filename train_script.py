@@ -248,7 +248,7 @@ if __name__ == "__main__":
                         help="Использовать CBAM модули")
     parser.add_argument('--cbam_ratio', type=int, default=16,
                         help="Ratio для ChannelAttention в CBAM")
-    parser.add_argument('--cbam_kernel_size', type=int, default=7,
+    parser.add_argument('--cbam_kernel_size', type=int, default=9,
                         help="Kernel size для SpatialAttention в CBAM")
 
     # 3. Параметры регуляризации
@@ -264,13 +264,13 @@ if __name__ == "__main__":
     # 4. Параметры аугментаций
     parser.add_argument('--use_mixup', action='store_true', default=True,
                         help="Использовать MixUp аугментацию")
-    parser.add_argument('--mixup_prob', type=float, default=0.3,
+    parser.add_argument('--mixup_prob', type=float, default=0.4,
                         help="Вероятность применения MixUp")
     parser.add_argument('--mixup_alpha', type=float, default=1.0,
                         help="Alpha параметр для MixUp")
     parser.add_argument('--use_cutmix', action='store_true', default=True,
                         help="Использовать CutMix аугментацию")
-    parser.add_argument('--cutmix_prob', type=float, default=0.3,
+    parser.add_argument('--cutmix_prob', type=float, default=0.4,
                         help="Вероятность применения CutMix")
     parser.add_argument('--cutmix_alpha', type=float, default=1.0,
                         help="Alpha параметр для CutMix")
@@ -278,7 +278,7 @@ if __name__ == "__main__":
     # 5. Параметры функции потерь
     parser.add_argument('--loss', type=str, choices=['ce', 'focal'], default='focal',
                         help="Тип функции потерь")
-    parser.add_argument('--focal_gamma', type=float, default=2.0,
+    parser.add_argument('--focal_gamma', type=float, default=3,
                         help="Gamma параметр для Focal Loss")
 
     # 6. Параметры обучения
