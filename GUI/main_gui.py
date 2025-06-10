@@ -3,7 +3,7 @@ import torch.nn.functional as F
 from torchvision import transforms
 from PIL import Image, ImageTk
 import tkinter as tk
-from tkinter import filedialog, Label, Button
+from tkinter import filedialog, Label, Button, Frame, Scrollbar, Canvas
 
 from models.improved_cnn import ImprovedCNN  # твоя модель
 import os
@@ -44,44 +44,89 @@ transform = transforms.Compose([
                          [0.229, 0.224, 0.225])
 ])
 
+
 # === GUI интерфейс ===
 class ImageClassifierApp:
     def __init__(self, root):
         self.root = root
-        self.root.title("Классификатор товаров")
-        self.image_label = Label(root)
-        self.image_label.pack(pady=10)
+        self.root.title("🛒 Классификатор товаров")
+        self.root.configure(bg="#E3F2FD")  # Светлый фон
 
-        self.result_label = Label(root, text="", font=("Arial", 14))
-        self.result_label.pack(pady=10)
+        # Экран приветствия перед загрузкой изображений
+        self.welcome_frame = Frame(self.root, bg="#ffffff", bd=2, relief="solid")
+        self.welcome_frame.pack(padx=20, pady=20, fill="both", expand=True)
 
-        self.button = Button(root, text="Загрузить изображение", command=self.load_and_predict)
-        self.button.pack(pady=5)
+        Label(self.welcome_frame, text="🔍 Добро пожаловать!", font=("Arial", 20, "bold"), bg="#ffffff").pack(pady=10)
+        Label(self.welcome_frame, text="Выберите изображения товаров для классификации.", font=("Arial", 14),
+              bg="#ffffff").pack(pady=5)
+
+        self.button = Button(self.welcome_frame, text="📁 Загрузить изображения", command=self.load_and_predict,
+                             font=("Arial", 14), bg="#2196F3", fg="white", relief="flat")
+        self.button.pack(pady=10)
+
+        self.button.bind("<Enter>", lambda e: self.button.config(bg="#1976D2"))
+        self.button.bind("<Leave>", lambda e: self.button.config(bg="#2196F3"))
+
+        # Контейнер для изображений (скрыт до загрузки)
+        self.image_container = Frame(self.root, bg="#ffffff")
+        self.image_canvas = Canvas(self.image_container, bg="#ffffff")
+        self.image_scrollbar = Scrollbar(self.image_container, orient="vertical", command=self.image_canvas.yview)
+        self.image_frame = Frame(self.image_canvas, bg="#ffffff")
+
+        self.image_frame.bind("<Configure>",
+                              lambda e: self.image_canvas.configure(scrollregion=self.image_canvas.bbox("all")))
+        self.image_canvas.create_window((0, 0), window=self.image_frame, anchor="nw")
+        self.image_canvas.configure(yscrollcommand=self.image_scrollbar.set)
+
+        # Кнопка для дополнительной загрузки изображений
+        self.additional_button = Button(self.root, text="📁 Загрузить еще изображения", command=self.load_and_predict,
+                                        font=("Arial", 14), bg="#4CAF50", fg="white", relief="flat")
+        self.additional_button.bind("<Enter>", lambda e: self.additional_button.config(bg="#388E3C"))
+        self.additional_button.bind("<Leave>", lambda e: self.additional_button.config(bg="#4CAF50"))
+        self.additional_button.pack(pady=10)
+        self.additional_button.pack_forget()  # Скрываем до первой загрузки
 
     def load_and_predict(self):
-        file_path = filedialog.askopenfilename(filetypes=[("Images", "*.jpg *.png *.jpeg")])
-        if not file_path:
+        file_paths = filedialog.askopenfilenames(filetypes=[("Images", "*.jpg *.png *.jpeg")])
+        if not file_paths:
             return
 
-        image = Image.open(file_path).convert("RGB")
-        display_image = image.resize((224, 224))
-        tk_image = ImageTk.PhotoImage(display_image)
-        self.image_label.config(image=tk_image)
-        self.image_label.image = tk_image
+        # Скрыть приветственный экран и показать контейнер изображений (если еще не скрыт)
+        if self.welcome_frame.winfo_ismapped():
+            self.welcome_frame.pack_forget()
+            self.image_container.pack(padx=20, pady=20, fill="both", expand=True)
+            self.image_canvas.pack(side="left", fill="both", expand=True)
+            self.image_scrollbar.pack(side="right", fill="y")
+            self.additional_button.pack(pady=10)  # Показываем кнопку дополнительной загрузки
 
-        tensor = transform(image).unsqueeze(0).to(device)
+        for file_path in file_paths:
+            image = Image.open(file_path).convert("RGB")
+            display_image = image.resize((120, 120))
+            tk_image = ImageTk.PhotoImage(display_image)
 
-        with torch.no_grad():
-            output = model(tensor)
-            probs = F.softmax(output, dim=1)
-            top_prob, top_class = torch.max(probs, 1)
+            frame = Frame(self.image_frame, bg="#FAFAFA", bd=2, relief="groove")
+            frame.pack(pady=5, padx=5, fill="x")
 
-        pred_class = idx_to_class[top_class.item()]
-        confidence = top_prob.item() * 100
-        self.result_label.config(text=f"🧠 Класс: {pred_class}\n📊 Уверенность: {confidence:.2f}%")
+            lbl = Label(frame, image=tk_image, text="", font=("Arial", 14), compound="left", bg="#FAFAFA")
+            lbl.image = tk_image
+            lbl.pack(side="left", padx=10, pady=5)
+
+            tensor = transform(image).unsqueeze(0).to(device)
+
+            with torch.no_grad():
+                output = model(tensor)
+                probs = F.softmax(output, dim=1)
+                top_prob, top_class = torch.max(probs, 1)
+
+            pred_class = idx_to_class[top_class.item()]
+            confidence = top_prob.item() * 100
+            Label(frame, text=f"{pred_class}\n{confidence:.2f}% уверенности", font=("Arial", 12), bg="#FAFAFA").pack(
+                side="left", padx=10, pady=5)
+
 
 # === Запуск приложения ===
 if __name__ == "__main__":
     root = tk.Tk()
+    root.geometry("800x500")  # Увеличенный размер окна
     app = ImageClassifierApp(root)
     root.mainloop()
